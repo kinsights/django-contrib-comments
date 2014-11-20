@@ -41,6 +41,15 @@ def get_model():
         from django_comments.models import Comment
         return Comment
 
+def get_model_name():
+    """
+    Returns the comment model name.
+    """
+    if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_model"):
+        return get_comment_app().get_model_name()
+    else:
+        return 'django_comments.Comment'
+
 def get_form():
     """
     Returns the comment ModelForm class.
