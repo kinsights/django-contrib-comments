@@ -9,8 +9,10 @@ from django.utils import timezone
 from django.utils.encoding import python_2_unicode_compatible
 
 from django_comments.managers import CommentManager
+from django_comments import get_model
 
 COMMENT_MAX_LENGTH = getattr(settings, 'COMMENT_MAX_LENGTH', 3000)
+ABSTRACT = getattr(settings, 'DJANGO_COMMENTS_ABSTRACT', False)
 
 
 class BaseCommentAbstractModel(models.Model):
@@ -74,7 +76,7 @@ class Comment(BaseCommentAbstractModel):
     objects = CommentManager()
 
     class Meta:
-        abstract = getattr(settings, 'DJANGO_COMMENTS_ABSTRACT', False)
+        abstract = ABSTRACT
         db_table = "django_comments"
         ordering = ('submit_date',)
         permissions = [("can_moderate", "Can moderate comments")]
@@ -177,7 +179,7 @@ class CommentFlag(models.Model):
     if you want rating look elsewhere.
     """
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('user'), related_name="comment_flags")
-    comment = models.ForeignKey(Comment, verbose_name=_('comment'), related_name="flags")
+    comment = models.ForeignKey(get_model(), verbose_name=_('comment'), related_name="flags")
     flag = models.CharField(_('flag'), max_length=30, db_index=True)
     flag_date = models.DateTimeField(_('date'), default=None)
 

@@ -3,9 +3,6 @@ from django.core import urlresolvers
 from django.core.exceptions import ImproperlyConfigured
 from django.utils.importlib import import_module
 
-from django_comments.models import Comment
-from django_comments.forms import CommentForm
-
 DEFAULT_COMMENTS_APP = 'django_comments'
 
 def get_comment_app():
@@ -41,6 +38,7 @@ def get_model():
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_model"):
         return get_comment_app().get_model()
     else:
+        from django_comments.models import Comment
         return Comment
 
 def get_form():
@@ -50,6 +48,7 @@ def get_form():
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_form"):
         return get_comment_app().get_form()
     else:
+        from django_comments.forms import CommentForm
         return CommentForm
 
 def get_form_target():
