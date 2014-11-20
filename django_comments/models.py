@@ -74,6 +74,7 @@ class Comment(BaseCommentAbstractModel):
     objects = CommentManager()
 
     class Meta:
+        abstract = getattr(settings, 'DJANGO_COMMENTS_ABSTRACT', False)
         db_table = "django_comments"
         ordering = ('submit_date',)
         permissions = [("can_moderate", "Can moderate comments")]
