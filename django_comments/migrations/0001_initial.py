@@ -32,7 +32,6 @@ class Migration(migrations.Migration):
                 ('user', models.ForeignKey(related_name='comment_comments', verbose_name='user', blank=True, to=settings.AUTH_USER_MODEL, null=True)),
             ],
             options={
-                'abstract': getattr(settings, 'DJANGO_COMMENTS_ABSTRACT', False),
                 'ordering': ('submit_date',),
                 'db_table': 'django_comments',
                 'verbose_name': 'comment',
