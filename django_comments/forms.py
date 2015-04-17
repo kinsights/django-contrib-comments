@@ -173,8 +173,10 @@ class CommentDetailsForm(CommentSecurityForm):
         contain anything in PROFANITIES_LIST.
         """
         comment = self.cleaned_data["comment"]
-        if settings.COMMENTS_ALLOW_PROFANITIES == False:
-            bad_words = [w for w in settings.PROFANITIES_LIST if w in comment.lower()]
+        COMMENTS_ALLOW_PROFANITIES = getattr(settings, 'COMMENTS_ALLOW_PROFANITIES', False)
+        PROFANITIES_LIST = getattr(settings, 'PROFANITIES_LIST', [])
+        if COMMENTS_ALLOW_PROFANITIES == False:
+            bad_words = [w for w in PROFANITIES_LIST if w in comment.lower()]
             if bad_words:
                 raise forms.ValidationError(ungettext(
                     "Watch your mouth! The word %s is not allowed here.",
