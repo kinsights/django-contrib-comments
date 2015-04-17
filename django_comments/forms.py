@@ -1,6 +1,6 @@
 import time
 from django import forms
-from django.forms.util import ErrorDict
+from django.forms.utils import ErrorDict
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils.crypto import salted_hmac, constant_time_compare
@@ -11,7 +11,9 @@ from django.utils.translation import ungettext, ugettext, ugettext_lazy as _
 
 from django_comments.models import Comment
 
+
 COMMENT_MAX_LENGTH = getattr(settings,'COMMENT_MAX_LENGTH', 3000)
+
 
 class CommentSecurityForm(forms.Form):
     """
@@ -171,8 +173,10 @@ class CommentDetailsForm(CommentSecurityForm):
         contain anything in PROFANITIES_LIST.
         """
         comment = self.cleaned_data["comment"]
-        if settings.COMMENTS_ALLOW_PROFANITIES == False:
-            bad_words = [w for w in settings.PROFANITIES_LIST if w in comment.lower()]
+        COMMENTS_ALLOW_PROFANITIES = getattr(settings, 'COMMENTS_ALLOW_PROFANITIES', False)
+        PROFANITIES_LIST = getattr(settings, 'PROFANITIES_LIST', [])
+        if COMMENTS_ALLOW_PROFANITIES == False:
+            bad_words = [w for w in PROFANITIES_LIST if w in comment.lower()]
             if bad_words:
                 raise forms.ValidationError(ungettext(
                     "Watch your mouth! The word %s is not allowed here.",
