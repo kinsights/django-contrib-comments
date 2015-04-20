@@ -5,12 +5,15 @@ from django.db import models, migrations
 from django.conf import settings
 
 
+is_abstract = lambda: getattr(settings, 'DJANGO_COMMENTS_ABSTRACT', False)
+
+
 def make_operations():
     import django_comments
 
     operations = []
 
-    if not settings.DJANGO_COMMENTS_ABSTRACT:
+    if not is_abstract():
         operations.append(
             migrations.CreateModel(
                 name='Comment',
@@ -77,7 +80,7 @@ dependencies = [
 def make_dependencies():
     import django_comments
 
-    if settings.DJANGO_COMMENTS_ABSTRACT:
+    if is_abstract():
         dependencies.append(migrations.swappable_dependency(django_comments.get_model_name()))
     return dependencies
 
