@@ -23,11 +23,11 @@ follow these steps:
 
    .. code-block:: python
 
-        urlpatterns = patterns('',
+        urlpatterns = [
             ...
-            (r'^comments/', include('django_comments.urls')),
+            url(r'^comments/', include('django_comments.urls')),
             ...
-        )
+        ]
 
 #. If your project had :doc:`customized the comments framework
    </custom>`, then update your imports to use the ``django_comments``
@@ -40,3 +40,9 @@ follow these steps:
 
         from django.contrib.comments.forms import CommentForm # old
         from django_comments.forms import CommentForm # new
+
+#. If your database schema already contains the tables and data
+   for existing comments and you get an error like
+   ``django.db.utils.ProgrammingError: relation "django_comments" already exists``
+   in your first subsequent migration, run 
+   ``manage.py migrate django_comments --fake-initial``.

@@ -4,6 +4,11 @@ from django.conf import settings
 from django.core import urlresolvers
 from django.core.exceptions import ImproperlyConfigured
 
+try:
+    from importlib import import_module
+except ImportError:
+    from django.utils.importlib import import_module
+
 
 DEFAULT_COMMENTS_APP = 'django_comments'
 
@@ -15,15 +20,17 @@ def get_comment_app():
     # Make sure the app's in INSTALLED_APPS
     comments_app = get_comment_app_name()
     if comments_app not in settings.INSTALLED_APPS:
-        raise ImproperlyConfigured("The COMMENTS_APP (%r) "\
-                                   "must be in INSTALLED_APPS" % settings.COMMENTS_APP)
+        raise ImproperlyConfigured(
+            "The COMMENTS_APP (%r) must be in INSTALLED_APPS" % settings.COMMENTS_APP
+        )
 
     # Try to import the package
     try:
         package = import_module(comments_app)
     except ImportError as e:
-        raise ImproperlyConfigured("The COMMENTS_APP setting refers to "\
-                                   "a non-existing package. (%s)" % e)
+        raise ImproperlyConfigured(
+            "The COMMENTS_APP setting refers to a non-existing package. (%s)" % e
+        )
 
     return package
 
@@ -37,6 +44,7 @@ def get_comment_app_name():
 
 
 def get_model():
+    from django_comments.models import Comment
     """
     Returns the comment model class.
     """
@@ -58,6 +66,7 @@ def get_model_name():
 
 
 def get_form():
+    from django_comments.forms import CommentForm
     """
     Returns the comment ModelForm class.
     """
@@ -75,7 +84,8 @@ def get_form_target():
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_form_target"):
         return get_comment_app().get_form_target()
     else:
-        return urlresolvers.reverse("django_comments.views.comments.post_comment")
+        return urlresolvers.reverse("comments-post-comment")
+
 
 
 def get_flag_url(comment):
@@ -85,8 +95,8 @@ def get_flag_url(comment):
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_flag_url"):
         return get_comment_app().get_flag_url(comment)
     else:
-        return urlresolvers.reverse("django_comments.views.moderation.flag",
-                                    args=(comment.id,))
+        return urlresolvers.reverse("comments-flag", args=(comment.id,))
+
 
 
 def get_delete_url(comment):
@@ -96,8 +106,8 @@ def get_delete_url(comment):
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_delete_url"):
         return get_comment_app().get_delete_url(comment)
     else:
-        return urlresolvers.reverse("django_comments.views.moderation.delete",
-                                    args=(comment.id,))
+        return urlresolvers.reverse("comments-delete", args=(comment.id,))
+
 
 
 def get_approve_url(comment):
@@ -107,5 +117,4 @@ def get_approve_url(comment):
     if get_comment_app_name() != DEFAULT_COMMENTS_APP and hasattr(get_comment_app(), "get_approve_url"):
         return get_comment_app().get_approve_url(comment)
     else:
-        return urlresolvers.reverse("django_comments.views.moderation.approve",
-                                    args=(comment.id,))
+        return urlresolvers.reverse("comments-approve", args=(comment.id,))

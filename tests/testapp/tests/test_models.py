@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from django_comments.models import Comment
 
 from . import CommentTestCase
-from ..models import Author, Article
+from testapp.models import Author, Article
 
 
 class CommentModelTests(CommentTestCase):
@@ -19,6 +19,7 @@ class CommentModelTests(CommentTestCase):
         self.assertEqual(c3.url, "http://example.com/~frank/")
         self.assertEqual(c1.user, None)
         self.assertEqual(c3.user, c4.user)
+
 
 class CommentManagerTests(CommentTestCase):
 

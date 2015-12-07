@@ -8,7 +8,7 @@ from django_comments.forms import CommentForm
 from django_comments.models import Comment
 
 from . import CommentTestCase
-from ..models import Article
+from testapp.models import Article
 
 
 class CommentFormTests(CommentTestCase):
@@ -67,18 +67,7 @@ class CommentFormTests(CommentTestCase):
         d = self.getValidData(a)
 
         # Save settings in case other tests need 'em
-        saved = (
-            getattr(
-                settings, 
-                'PROFANITIES_LIST',
-                []
-            ),
-            getattr(
-                settings,
-                'COMMENTS_ALLOW_PROFANITIES',
-                False
-            ),
-        )
+        saved = getattr(settings, 'PROFANITIES_LIST', []), getattr(settings, 'COMMENTS_ALLOW_PROFANITIES', False)
 
         # Don't wanna swear in the unit tests if we don't have to...
         settings.PROFANITIES_LIST = ["rooster"]
