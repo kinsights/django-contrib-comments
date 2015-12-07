@@ -61,7 +61,7 @@ def make_operations():
                 ('flag', models.CharField(max_length=30, verbose_name='flag', db_index=True)),
                 ('flag_date', models.DateTimeField(default=None, verbose_name='date')),
                 ('comment', models.ForeignKey(related_name='flags', verbose_name='comment',
-                    to='django_comments.Comment')),
+                    to=comment_model)),
                 ('user', models.ForeignKey(related_name='comment_flags', verbose_name='user',
                     to=settings.AUTH_USER_MODEL)),
             ],
