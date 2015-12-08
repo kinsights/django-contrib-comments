@@ -1,5 +1,10 @@
 from django.conf import settings
-from django.contrib.contenttypes.fields import GenericForeignKey
+
+try:
+    from django.contrib.contenttypes.fields import GenericForeignKey
+except ImportError:
+    from django.contrib.contenttypes.generic import GenericForeignKey
+
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core import urlresolvers
@@ -24,9 +29,9 @@ class BaseCommentAbstractModel(models.Model):
 
     # Content-object field
     content_type = models.ForeignKey(ContentType,
-            verbose_name=_('content type'),
-            related_name="content_type_set_for_%(class)s")
-    object_pk = models.PositiveIntegerField(verbose_name=_('object ID'))
+                                     verbose_name=_('content type'),
+                                     related_name="content_type_set_for_%(class)s")
+    object_pk = models.TextField(_('object ID'))
     content_object = GenericForeignKey(ct_field="content_type", fk_field="object_pk")
 
     # Metadata about the comment
@@ -55,9 +60,11 @@ class Comment(BaseCommentAbstractModel):
     # user; otherwise at least user_name should have been set and the comment
     # was posted by a non-authenticated user.
     user = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name=_('user'),
-                    blank=True, null=True, related_name="%(class)s_comments")
+                             blank=True, null=True, related_name="%(class)s_comments")
     user_name = models.CharField(_("user's name"), max_length=50, blank=True)
-    user_email = models.EmailField(_("user's email address"), blank=True)
+    # Explicit `max_length` to apply both to Django 1.7 and 1.8+.
+    user_email = models.EmailField(_("user's email address"), max_length=254,
+                                   blank=True)
     user_url = models.URLField(_("user's URL"), blank=True)
 
     comment = models.TextField(_('comment'), max_length=COMMENT_MAX_LENGTH)
@@ -66,12 +73,12 @@ class Comment(BaseCommentAbstractModel):
     submit_date = models.DateTimeField(_('date/time submitted'), default=None)
     ip_address = models.GenericIPAddressField(_('IP address'), unpack_ipv4=True, blank=True, null=True)
     is_public = models.BooleanField(_('is public'), default=True,
-                    help_text=_('Uncheck this box to make the comment effectively ' \
-                                'disappear from the site.'))
+                                    help_text=_('Uncheck this box to make the comment effectively '
+                                                'disappear from the site.'))
     is_removed = models.BooleanField(_('is removed'), default=False,
-                    help_text=_('Check this box if the comment is inappropriate. ' \
-                                'A "This comment has been removed" message will ' \
-                                'be displayed instead.'))
+                                     help_text=_('Check this box if the comment is inappropriate. '
+                                                 'A "This comment has been removed" message will '
+                                                 'be displayed instead.'))
 
     # Manager
     objects = CommentManager()
@@ -119,6 +126,7 @@ class Comment(BaseCommentAbstractModel):
                     userinfo["name"] = u.get_username()
             self._userinfo = userinfo
         return self._userinfo
+
     userinfo = property(_get_userinfo, doc=_get_userinfo.__doc__)
 
     def _get_name(self):
@@ -126,9 +134,10 @@ class Comment(BaseCommentAbstractModel):
 
     def _set_name(self, val):
         if self.user_id:
-            raise AttributeError(_("This comment was posted by an authenticated "\
+            raise AttributeError(_("This comment was posted by an authenticated "
                                    "user and thus the name is read-only."))
         self.user_name = val
+
     name = property(_get_name, _set_name, doc="The name of the user who posted this comment")
 
     def _get_email(self):
@@ -136,9 +145,10 @@ class Comment(BaseCommentAbstractModel):
 
     def _set_email(self, val):
         if self.user_id:
-            raise AttributeError(_("This comment was posted by an authenticated "\
+            raise AttributeError(_("This comment was posted by an authenticated "
                                    "user and thus the email is read-only."))
         self.user_email = val
+
     email = property(_get_email, _set_email, doc="The email of the user who posted this comment")
 
     def _get_url(self):
@@ -146,6 +156,7 @@ class Comment(BaseCommentAbstractModel):
 
     def _set_url(self, val):
         self.user_url = val
+
     url = property(_get_url, _set_url, doc="The URL given by the user who posted this comment")
 
     def get_absolute_url(self, anchor_pattern="#c%(id)s"):
@@ -196,8 +207,9 @@ class CommentFlag(models.Model):
         verbose_name_plural = _('comment flags')
 
     def __str__(self):
-        return "%s flag of comment ID %s by %s" % \
-            (self.flag, self.comment_id, self.user.get_username())
+        return "%s flag of comment ID %s by %s" % (
+            self.flag, self.comment_id, self.user.get_username()
+        )
 
     def save(self, *args, **kwargs):
         if self.flag_date is None:

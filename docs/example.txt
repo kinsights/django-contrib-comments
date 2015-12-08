@@ -140,18 +140,18 @@ enable it in your project's ``urls.py``:
 
 .. code-block:: python
 
-  from django.conf.urls import patterns
+  from django.conf.urls import url
   from django_comments.feeds import LatestCommentFeed
 
-  urlpatterns = patterns('',
+  urlpatterns = [
   # ...
-      (r'^feeds/latest/$', LatestCommentFeed()),
+      url(r'^feeds/latest/$', LatestCommentFeed()),
   # ...
-  )
+  ]
 
 Now you should have the latest comment feeds being served off ``/feeds/latest/``.
 
-__ https://docs.djangoproject.com/en/1.5/ref/contrib/syndication/
+__ https://docs.djangoproject.com/en/stable/ref/contrib/syndication/
 
 Moderation
 ==========

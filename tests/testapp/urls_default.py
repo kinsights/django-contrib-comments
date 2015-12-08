@@ -1,9 +1,11 @@
-from django.conf.urls import patterns, include
+from django.conf.urls import include, url
+from django.contrib.auth.views import login, logout
 
-urlpatterns = patterns('',
-    (r'^', include('django_comments.urls')),
+
+urlpatterns = [
+    url(r'^', include('django_comments.urls')),
 
     # Provide the auth system login and logout views
-    (r'^accounts/login/$', 'django.contrib.auth.views.login', {'template_name': 'login.html'}),
-    (r'^accounts/logout/$', 'django.contrib.auth.views.logout'),
-)
+    url(r'^accounts/login/$', login, {'template_name': 'login.html'}),
+    url(r'^accounts/logout/$', logout),
+]

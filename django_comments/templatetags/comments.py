@@ -28,8 +28,8 @@ class BaseCommentNode(template.Node):
             if tokens[3] != 'as':
                 raise template.TemplateSyntaxError("Third argument in %r must be 'as'" % tokens[0])
             return cls(
-                object_expr = parser.compile_filter(tokens[2]),
-                as_varname = tokens[4],
+                object_expr=parser.compile_filter(tokens[2]),
+                as_varname=tokens[4],
             )
 
         # {% get_whatever for app.model pk as varname %}
@@ -37,9 +37,9 @@ class BaseCommentNode(template.Node):
             if tokens[4] != 'as':
                 raise template.TemplateSyntaxError("Fourth argument in %r must be 'as'" % tokens[0])
             return cls(
-                ctype = BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
-                object_pk_expr = parser.compile_filter(tokens[3]),
-                as_varname = tokens[5]
+                ctype=BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
+                object_pk_expr=parser.compile_filter(tokens[3]),
+                as_varname=tokens[5]
             )
 
         else:
@@ -57,7 +57,8 @@ class BaseCommentNode(template.Node):
 
     def __init__(self, ctype=None, object_pk_expr=None, object_expr=None, as_varname=None, comment=None):
         if ctype is None and object_expr is None:
-            raise template.TemplateSyntaxError("Comment nodes must be given either a literal object or a ctype and object pk.")
+            raise template.TemplateSyntaxError(
+                "Comment nodes must be given either a literal object or a ctype and object pk.")
         self.comment_model = django_comments.get_model()
         self.as_varname = as_varname
         self.ctype = ctype
@@ -66,19 +67,19 @@ class BaseCommentNode(template.Node):
         self.comment = comment
 
     def render(self, context):
-        qs = self.get_query_set(context)
+        qs = self.get_queryset(context)
         context[self.as_varname] = self.get_context_value_from_queryset(context, qs)
         return ''
 
-    def get_query_set(self, context):
+    def get_queryset(self, context):
         ctype, object_pk = self.get_target_ctype_pk(context)
         if not object_pk:
             return self.comment_model.objects.none()
 
         qs = self.comment_model.objects.filter(
-            content_type = ctype,
-            object_pk    = smart_text(object_pk),
-            site__pk     = settings.SITE_ID,
+            content_type=ctype,
+            object_pk=smart_text(object_pk),
+            site__pk=settings.SITE_ID,
         )
 
         # The is_public and is_removed fields are implementation details of the
@@ -107,15 +108,20 @@ class BaseCommentNode(template.Node):
         """Subclasses should override this."""
         raise NotImplementedError
 
+
 class CommentListNode(BaseCommentNode):
     """Insert a list of comments into the context."""
+
     def get_context_value_from_queryset(self, context, qs):
         return list(qs)
 
+
 class CommentCountNode(BaseCommentNode):
     """Insert a count of comments into the context."""
+
     def get_context_value_from_queryset(self, context, qs):
         return qs.count()
+
 
 class CommentFormNode(BaseCommentNode):
     """Insert a form for the comment model into the context."""
@@ -135,12 +141,13 @@ class CommentFormNode(BaseCommentNode):
                 return None
         else:
             object_pk = self.object_pk_expr.resolve(context,
-                    ignore_failures=True)
+                                                    ignore_failures=True)
             return self.ctype.get_object_for_this_type(pk=object_pk)
 
     def render(self, context):
         context[self.as_varname] = self.get_form(context)
         return ''
+
 
 class RenderCommentFormNode(CommentFormNode):
     """Render the comment form directly"""
@@ -159,8 +166,8 @@ class RenderCommentFormNode(CommentFormNode):
         # {% render_comment_form for app.models pk %}
         elif len(tokens) == 4:
             return cls(
-                ctype = BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
-                object_pk_expr = parser.compile_filter(tokens[3])
+                ctype=BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
+                object_pk_expr=parser.compile_filter(tokens[3])
             )
 
     def render(self, context):
@@ -171,12 +178,16 @@ class RenderCommentFormNode(CommentFormNode):
                 "comments/%s/form.html" % ctype.app_label,
                 "comments/form.html"
             ]
-            context.push()
-            formstr = render_to_string(template_search_list, {"form" : self.get_form(context)}, context)
-            context.pop()
+            # Django 1.6 does not have context.flatten().
+            context_dict = {}
+            for d in context.dicts:
+                context_dict.update(d)
+            context_dict['form'] = self.get_form(context)
+            formstr = render_to_string(template_search_list, context_dict)
             return formstr
         else:
             return ''
+
 
 class RenderCommentListNode(CommentListNode):
     """Render the comment list directly"""
@@ -195,8 +206,8 @@ class RenderCommentListNode(CommentListNode):
         # {% render_comment_list for app.models pk %}
         elif len(tokens) == 4:
             return cls(
-                ctype = BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
-                object_pk_expr = parser.compile_filter(tokens[3])
+                ctype=BaseCommentNode.lookup_content_type(tokens[2], tokens[0]),
+                object_pk_expr=parser.compile_filter(tokens[3])
             )
 
     def render(self, context):
@@ -207,15 +218,17 @@ class RenderCommentListNode(CommentListNode):
                 "comments/%s/list.html" % ctype.app_label,
                 "comments/list.html"
             ]
-            qs = self.get_query_set(context)
-            context.push()
-            liststr = render_to_string(template_search_list, {
-                "comment_list" : self.get_context_value_from_queryset(context, qs)
-            }, context)
-            context.pop()
+            qs = self.get_queryset(context)
+            # Django 1.6 does not have context.flatten().
+            context_dict = {}
+            for d in context.dicts:
+                context_dict.update(d)
+            context_dict['comment_list'] = self.get_context_value_from_queryset(context, qs)
+            liststr = render_to_string(template_search_list, context_dict)
             return liststr
         else:
             return ''
+
 
 # We could just register each classmethod directly, but then we'd lose out on
 # the automagic docstrings-into-admin-docs tricks. So each node gets a cute
@@ -242,6 +255,7 @@ def get_comment_count(parser, token):
     """
     return CommentCountNode.handle_token(parser, token)
 
+
 @register.tag
 def get_comment_list(parser, token):
     """
@@ -264,6 +278,7 @@ def get_comment_list(parser, token):
     """
     return CommentListNode.handle_token(parser, token)
 
+
 @register.tag
 def render_comment_list(parser, token):
     """
@@ -282,6 +297,7 @@ def render_comment_list(parser, token):
     """
     return RenderCommentListNode.handle_token(parser, token)
 
+
 @register.tag
 def get_comment_form(parser, token):
     """
@@ -293,6 +309,7 @@ def get_comment_form(parser, token):
         {% get_comment_form for [app].[model] [object_id] as [varname] %}
     """
     return CommentFormNode.handle_token(parser, token)
+
 
 @register.tag
 def render_comment_form(parser, token):
@@ -307,6 +324,7 @@ def render_comment_form(parser, token):
     """
     return RenderCommentFormNode.handle_token(parser, token)
 
+
 @register.simple_tag
 def comment_form_target():
     """
@@ -317,6 +335,7 @@ def comment_form_target():
         <form action="{% comment_form_target %}" method="post">
     """
     return django_comments.get_form_target()
+
 
 @register.simple_tag
 def get_comment_permalink(comment, anchor_pattern=None):
@@ -331,4 +350,3 @@ def get_comment_permalink(comment, anchor_pattern=None):
     if anchor_pattern:
         return comment.get_absolute_url(anchor_pattern)
     return comment.get_absolute_url()
-

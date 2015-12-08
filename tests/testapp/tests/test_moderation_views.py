@@ -26,7 +26,7 @@ class FlagViewTests(CommentTestCase):
         pk = comments[0].pk
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/flag/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/flagged/?c=%d" % pk)
+        self.assertRedirects(response, "http://testserver/flagged/?c=%d" % pk)
         c = Comment.objects.get(pk=pk)
         self.assertEqual(c.flags.filter(flag=CommentFlag.SUGGEST_REMOVAL).count(), 1)
         return c
@@ -39,7 +39,7 @@ class FlagViewTests(CommentTestCase):
         pk = comments[0].pk
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/flag/%d/" % pk, {'next': "/go/here/"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/go/here/?c=%d" % pk)
 
     def testFlagPostUnsafeNext(self):
@@ -52,7 +52,7 @@ class FlagViewTests(CommentTestCase):
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/flag/%d/" % pk,
             {'next': "http://elsewhere/bad"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/flagged/?c=%d" % pk)
 
     def testFlagPostTwice(self):
@@ -67,9 +67,9 @@ class FlagViewTests(CommentTestCase):
         comments = self.createSomeComments()
         pk = comments[0].pk
         response = self.client.get("/flag/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/accounts/login/?next=/flag/%d/" % pk)
+        self.assertRedirects(response, "http://testserver/accounts/login/?next=/flag/%d/" % pk)
         response = self.client.post("/flag/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/accounts/login/?next=/flag/%d/" % pk)
+        self.assertRedirects(response, "http://testserver/accounts/login/?next=/flag/%d/" % pk)
 
     def testFlaggedView(self):
         comments = self.createSomeComments()
@@ -96,11 +96,13 @@ class FlagViewTests(CommentTestCase):
 
         signals.comment_was_flagged.disconnect(receive)
 
+
 def makeModerator(username):
     u = User.objects.get(username=username)
     ct = ContentType.objects.get_for_model(Comment)
     p = Permission.objects.get(content_type=ct, codename="can_moderate")
     u.user_permissions.add(p)
+
 
 class DeleteViewTests(CommentTestCase):
 
@@ -110,7 +112,7 @@ class DeleteViewTests(CommentTestCase):
         pk = comments[0].pk
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.get("/delete/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/accounts/login/?next=/delete/%d/" % pk)
+        self.assertRedirects(response, "http://testserver/accounts/login/?next=/delete/%d/" % pk)
 
         makeModerator("normaluser")
         response = self.client.get("/delete/%d/" % pk)
@@ -123,7 +125,7 @@ class DeleteViewTests(CommentTestCase):
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/delete/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/deleted/?c=%d" % pk)
+        self.assertRedirects(response, "http://testserver/deleted/?c=%d" % pk)
         c = Comment.objects.get(pk=pk)
         self.assertTrue(c.is_removed)
         self.assertEqual(c.flags.filter(flag=CommentFlag.MODERATOR_DELETION, user__username="normaluser").count(), 1)
@@ -138,7 +140,7 @@ class DeleteViewTests(CommentTestCase):
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/delete/%d/" % pk, {'next': "/go/here/"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/go/here/?c=%d" % pk)
 
     def testDeletePostUnsafeNext(self):
@@ -152,7 +154,7 @@ class DeleteViewTests(CommentTestCase):
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/delete/%d/" % pk,
             {'next': "http://elsewhere/bad"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/deleted/?c=%d" % pk)
 
     def testDeleteSignals(self):
@@ -175,6 +177,7 @@ class DeleteViewTests(CommentTestCase):
         response = self.client.get("/deleted/", data={"c": pk})
         self.assertTemplateUsed(response, "comments/deleted.html")
 
+
 class ApproveViewTests(CommentTestCase):
 
     def testApprovePermissions(self):
@@ -183,7 +186,7 @@ class ApproveViewTests(CommentTestCase):
         pk = comments[0].pk
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.get("/approve/%d/" % pk)
-        self.assertEqual(response["Location"], "http://testserver/accounts/login/?next=/approve/%d/" % pk)
+        self.assertRedirects(response, "http://testserver/accounts/login/?next=/approve/%d/" % pk)
 
         makeModerator("normaluser")
         response = self.client.get("/approve/%d/" % pk)
@@ -192,12 +195,13 @@ class ApproveViewTests(CommentTestCase):
     def testApprovePost(self):
         """POSTing the approve view should mark the comment as removed"""
         c1, c2, c3, c4 = self.createSomeComments()
-        c1.is_public = False; c1.save()
+        c1.is_public = False
+        c1.save()
 
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/approve/%d/" % c1.pk)
-        self.assertEqual(response["Location"], "http://testserver/approved/?c=%d" % c1.pk)
+        self.assertRedirects(response, "http://testserver/approved/?c=%d" % c1.pk)
         c = Comment.objects.get(pk=c1.pk)
         self.assertTrue(c.is_public)
         self.assertEqual(c.flags.filter(flag=CommentFlag.MODERATOR_APPROVAL, user__username="normaluser").count(), 1)
@@ -208,13 +212,14 @@ class ApproveViewTests(CommentTestCase):
         url.
         """
         c1, c2, c3, c4 = self.createSomeComments()
-        c1.is_public = False; c1.save()
+        c1.is_public = False
+        c1.save()
 
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/approve/%d/" % c1.pk,
             {'next': "/go/here/"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/go/here/?c=%d" % c1.pk)
 
     def testApprovePostUnsafeNext(self):
@@ -223,13 +228,14 @@ class ApproveViewTests(CommentTestCase):
         provided url when redirecting.
         """
         c1, c2, c3, c4 = self.createSomeComments()
-        c1.is_public = False; c1.save()
+        c1.is_public = False
+        c1.save()
 
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.post("/approve/%d/" % c1.pk,
             {'next': "http://elsewhere/bad"})
-        self.assertEqual(response["Location"],
+        self.assertRedirects(response,
             "http://testserver/approved/?c=%d" % c1.pk)
 
     def testApproveSignals(self):
@@ -249,8 +255,9 @@ class ApproveViewTests(CommentTestCase):
     def testApprovedView(self):
         comments = self.createSomeComments()
         pk = comments[0].pk
-        response = self.client.get("/approved/", data={"c":pk})
+        response = self.client.get("/approved/", data={"c": pk})
         self.assertTemplateUsed(response, "comments/approved.html")
+
 
 class AdminActionsTests(CommentTestCase):
     urls = "testapp.urls_admin"
@@ -262,21 +269,21 @@ class AdminActionsTests(CommentTestCase):
         u = User.objects.get(username="normaluser")
         u.is_staff = True
         perms = Permission.objects.filter(
-            content_type__app_label = 'django_comments',
-            codename__endswith = 'comment'
+            content_type__app_label='django_comments',
+            codename__endswith='comment'
         )
         for perm in perms:
             u.user_permissions.add(perm)
         u.save()
 
     def testActionsNonModerator(self):
-        comments = self.createSomeComments()
+        self.createSomeComments()
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.get("/admin/django_comments/comment/")
         self.assertNotContains(response, "approve_comments")
 
     def testActionsModerator(self):
-        comments = self.createSomeComments()
+        self.createSomeComments()
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.get("/admin/django_comments/comment/")
@@ -284,7 +291,7 @@ class AdminActionsTests(CommentTestCase):
 
     def testActionsDisabledDelete(self):
         "Tests a CommentAdmin where 'delete_selected' has been disabled."
-        comments = self.createSomeComments()
+        self.createSomeComments()
         self.client.login(username="normaluser", password="normaluser")
         response = self.client.get('/admin2/django_comments/comment/')
         self.assertEqual(response.status_code, 200)
@@ -308,12 +315,18 @@ class AdminActionsTests(CommentTestCase):
         makeModerator("normaluser")
         self.client.login(username="normaluser", password="normaluser")
         with translation.override('en'):
-            #Test approving
-            self.performActionAndCheckMessage('approve_comments', one_comment, '1 comment was successfully approved.')
-            self.performActionAndCheckMessage('approve_comments', many_comments, '3 comments were successfully approved.')
-            #Test flagging
-            self.performActionAndCheckMessage('flag_comments', one_comment, '1 comment was successfully flagged.')
-            self.performActionAndCheckMessage('flag_comments', many_comments, '3 comments were successfully flagged.')
-            #Test removing
-            self.performActionAndCheckMessage('remove_comments', one_comment, '1 comment was successfully removed.')
-            self.performActionAndCheckMessage('remove_comments', many_comments, '3 comments were successfully removed.')
+            # Test approving
+            self.performActionAndCheckMessage('approve_comments', one_comment,
+                '1 comment was successfully approved.')
+            self.performActionAndCheckMessage('approve_comments', many_comments,
+                '3 comments were successfully approved.')
+            # Test flagging
+            self.performActionAndCheckMessage('flag_comments', one_comment,
+                '1 comment was successfully flagged.')
+            self.performActionAndCheckMessage('flag_comments', many_comments,
+                '3 comments were successfully flagged.')
+            # Test removing
+            self.performActionAndCheckMessage('remove_comments', one_comment,
+                '1 comment was successfully removed.')
+            self.performActionAndCheckMessage('remove_comments', many_comments,
+                '3 comments were successfully removed.')
